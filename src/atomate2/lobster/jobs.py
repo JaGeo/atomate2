@@ -11,7 +11,6 @@ from monty.serialization import loadfn
 from monty.shutil import gzip_dir
 from pymatgen.io.lobster import Lobsterin
 from pymatgen.electronic_structure.cohp import CompleteCohp
-from pymatgen.electronic_structure.dos import LobsterCompleteDos
 from atomate2.lobster.files import copy_lobster_files, write_lobster_settings
 from atomate2.lobster.schemas import LobsterTaskDocument
 from atomate2.lobster.run import run_lobster
@@ -40,7 +39,7 @@ class PureLobsterMaker(Maker):
     resubmit: bool = False
     task_document_kwargs: dict = field(default_factory=dict)
 
-    @job(output_schema=LobsterTaskDocument, data=[CompleteCohp, LobsterCompleteDos])
+    @job(output_schema=LobsterTaskDocument, data=[CompleteCohp])
     def make(
         self,
         wavefunction_dir: str | Path = None,
