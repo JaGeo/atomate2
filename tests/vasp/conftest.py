@@ -74,7 +74,6 @@ def mock_vasp(monkeypatch, vasp_test_dir):
 
     get_input_set_orig = VaspInputGenerator.get_input_set
 
-
     def mock_get_input_set(self, *args, **kwargs):
         kwargs["potcar_spec"] = True
         return get_input_set_orig(self, *args, **kwargs)

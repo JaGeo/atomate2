@@ -5,25 +5,20 @@ from __future__ import annotations
 from dataclasses import dataclass, field
 from pathlib import Path
 
+from jobflow import Flow, Maker
+from pymatgen.core import Structure
+
 from atomate2.vasp.flows.core import DoubleRelaxMaker
 from atomate2.vasp.jobs.base import BaseVaspMaker
-from atomate2.vasp.jobs.core import StaticMaker, RelaxMaker
+from atomate2.vasp.jobs.core import RelaxMaker, StaticMaker
 from atomate2.vasp.jobs.lobster import (
     VaspLobsterMaker,
+    delete_lobster_wavecar,
     get_basis_infos,
     get_lobster_jobs,
-    update_user_incar_settings_job,
     update_user_incar_settings_maker,
-    delete_lobster_wavecar,
 )
-from atomate2.vasp.powerups import (
-        update_user_incar_settings,
-        update_user_kpoints_settings
-    )
 from atomate2.vasp.sets.core import StaticSetGenerator
-from jobflow import Flow
-from jobflow import Maker
-from pymatgen.core import Structure
 
 __all__ = ["LobsterMaker"]
 
@@ -58,12 +53,12 @@ class LobsterMaker(Maker):
 
     name: str = "lobster"
     # implement different calculation types
-    calculation_type: str = "standard",
-    delete_all_wavecars: bool = True,
+    calculation_type: str = "standard"
+    delete_all_wavecars: bool = True
     user_lobsterin_settings: dict | None = None
     user_supplied_basis: dict | None = None
-    isym: int = 0,
-    additional_outputs: list[str] | None = None,
+    isym: int = 0
+    additional_outputs: list[str] | None = None
     bulk_relax_maker: BaseVaspMaker | None = field(
         default_factory=lambda: DoubleRelaxMaker.from_relax_maker(RelaxMaker())
     )
@@ -81,9 +76,9 @@ class LobsterMaker(Maker):
     )
 
     def make(
-            self,
-            structure: Structure,
-            prev_vasp_dir: str | Path | None = None,
+        self,
+        structure: Structure,
+        prev_vasp_dir: str | Path | None = None,
     ):
         """
         Make flow to calculate bonding properties.
@@ -113,7 +108,8 @@ class LobsterMaker(Maker):
             optimization_run_job_dir = None
             optimization_run_uuid = None
 
-        # do a static WAVECAR computation with symmetry and standard number of bands first
+        # do a static WAVECAR computation with symmetry
+        # and standard number of bands first
         # Do a static VASP computation
         if self.additional_static_run_maker is not None:
             preconvergence_job = self.additional_static_run_maker.make(
@@ -133,7 +129,6 @@ class LobsterMaker(Maker):
 
         # at gamma: -5 is used as standard, leads to errors for gamma only
 
-
         basis_infos = get_basis_infos(
             structure=structure,
             vaspmaker=self.vasp_lobster_maker,
@@ -142,21 +137,29 @@ class LobsterMaker(Maker):
         )
         jobs.append(basis_infos)
 
-        vaspjob = update_user_incar_settings_maker(self.vasp_lobster_maker, basis_infos.output, structure,prev_vasp_dir)
-
+        vaspjob = update_user_incar_settings_maker(
+            self.vasp_lobster_maker, basis_infos.output, structure, prev_vasp_dir
+        )
 
         jobs.append(vaspjob)
 
-        static_run_job_dir=vaspjob.output.dir_name
-        static_run_uuid=vaspjob.output.uuid
+        static_run_job_dir = vaspjob.output.dir_name
+        static_run_uuid = vaspjob.output.uuid
 
         lobsterjobs = get_lobster_jobs(
-            basis_infos.output["basis_dict"], vaspjob.output.dir_name,
-            self.user_lobsterin_settings,self.additional_outputs,  optimization_run_job_dir, optimization_run_uuid, static_run_job_dir, static_run_uuid, additional_static_run_job_dir,  additional_static_run_uuid
+            basis_infos.output["basis_dict"],
+            vaspjob.output.dir_name,
+            self.user_lobsterin_settings,
+            self.additional_outputs,
+            optimization_run_job_dir,
+            optimization_run_uuid,
+            static_run_job_dir,
+            static_run_uuid,
+            additional_static_run_job_dir,
+            additional_static_run_uuid,
         )
 
         jobs.append(lobsterjobs)
-
 
         # will delete all WAVECARs that have been copied
 

@@ -6,15 +6,15 @@ import logging
 from dataclasses import dataclass, field
 from pathlib import Path
 
-from jobflow import Maker, Response, job
-from monty.serialization import loadfn
+from jobflow import Maker, job
 from monty.shutil import gzip_dir
-from pymatgen.io.lobster import Lobsterin
 from pymatgen.electronic_structure.cohp import CompleteCohp
 from pymatgen.electronic_structure.dos import LobsterCompleteDos
-from atomate2.lobster.files import copy_lobster_files, write_lobster_settings
-from atomate2.lobster.schemas import LobsterTaskDocument
+from pymatgen.io.lobster import Lobsterin
+
+from atomate2.lobster.files import copy_lobster_files
 from atomate2.lobster.run import run_lobster
+from atomate2.lobster.schemas import LobsterTaskDocument
 
 __all__ = ["PureLobsterMaker"]
 
@@ -44,9 +44,9 @@ class PureLobsterMaker(Maker):
     def make(
         self,
         wavefunction_dir: str | Path = None,
-        basis_dict: dict |None= None,
-        user_lobsterin_settings: dict|None = None,
-        additional_outputs: list[str] |None = None,
+        basis_dict: dict | None = None,
+        user_lobsterin_settings: dict | None = None,
+        additional_outputs: list[str] | None = None,
         # something for the basis
     ):
         """
@@ -81,7 +81,9 @@ class PureLobsterMaker(Maker):
 
         # parse amset outputs
         task_doc = LobsterTaskDocument.from_directory(
-            Path.cwd(), **self.task_document_kwargs, additional_fields=additional_outputs
+            Path.cwd(),
+            **self.task_document_kwargs,
+            additional_fields=additional_outputs,
         )
         # task_doc.converged = converged
 

@@ -4,21 +4,18 @@ from __future__ import annotations
 
 import logging
 from dataclasses import dataclass, field
-from pathlib import Path
-from jobflow import Flow
-from jobflow import Maker, Response, job
-from monty.serialization import loadfn
-from monty.shutil import gzip_dir
+
+from jobflow import Flow, Response, job
+from pymatgen.io.lobster import Lobsterin
+
 from atomate2.common.files import delete_files
+from atomate2.lobster.jobs import PureLobsterMaker
 from atomate2.lobster.schemas import LobsterTaskDocument
+from atomate2.utils.path import strip_hostname
 from atomate2.vasp.jobs.base import BaseVaspMaker
+from atomate2.vasp.powerups import update_user_incar_settings
 from atomate2.vasp.sets.base import VaspInputGenerator
 from atomate2.vasp.sets.core import StaticSetGenerator
-from pymatgen.io.lobster import Lobsterin
-from atomate2.vasp.powerups import update_user_incar_settings
-from pymatgen.core import Structure
-from atomate2.lobster.jobs import PureLobsterMaker
-from atomate2.utils.path import strip_hostname
 
 __all__ = ["VaspLobsterMaker", "get_basis_infos", "get_lobster_jobs"]
 
@@ -30,7 +27,8 @@ logger = logging.getLogger(__name__)
 @dataclass
 class VaspLobsterMaker(BaseVaspMaker):
     """
-    Maker that performs a VASP computation with settings that are required for Lobter runs
+    Maker that performs a VASP computation with settings
+    that are required for Lobter runs
     Parameters
     ----------
     name : str
@@ -131,19 +129,28 @@ def update_user_incar_settings_job(vaspjob, nbands):
     vaspjob = update_user_incar_settings(vaspjob, {"NBANDS": nbands["nbands"]})
     return Response(replace=vaspjob)
 
+
 @job
 def update_user_incar_settings_maker(vaspmaker, nbands, structure, prev_vasp_dir):
-    vaspmaker= update_user_incar_settings(vaspmaker, {"NBANDS": nbands["nbands"]})
+    vaspmaker = update_user_incar_settings(vaspmaker, {"NBANDS": nbands["nbands"]})
 
-    vaspjob = vaspmaker.make(
-        structure=structure, prev_vasp_dir=prev_vasp_dir
-    )
+    vaspjob = vaspmaker.make(structure=structure, prev_vasp_dir=prev_vasp_dir)
     return Response(replace=vaspjob)
 
 
-
 @job
-def get_lobster_jobs(basis_dict, wavefunction_dir, user_lobsterin_settings, additional_outputs, optimization_run_job_dir, optimization_run_uuid, static_run_job_dir, static_run_uuid, additional_static_run_job_dir,  additional_static_run_uuid):
+def get_lobster_jobs(
+    basis_dict,
+    wavefunction_dir,
+    user_lobsterin_settings,
+    additional_outputs,
+    optimization_run_job_dir,
+    optimization_run_uuid,
+    static_run_job_dir,
+    static_run_uuid,
+    additional_static_run_job_dir,
+    additional_static_run_uuid,
+):
     jobs = []
     outputs = {}
     outputs["optimization_run_job_dir"] = optimization_run_job_dir
@@ -154,12 +161,14 @@ def get_lobster_jobs(basis_dict, wavefunction_dir, user_lobsterin_settings, addi
     outputs["additional_static_uuid"] = additional_static_run_uuid
     outputs["lobster_uuids"] = []
     outputs["lobster_dirs"] = []
-    outputs["lobster_task_documents"]=[]
+    outputs["lobster_task_documents"] = []
 
     for i, basis in enumerate(basis_dict):
-        lobsterjob = PureLobsterMaker(name="lobster_run_{}".format(i)).make(
-            wavefunction_dir=wavefunction_dir, basis_dict=basis,
-            user_lobsterin_settings=user_lobsterin_settings, additional_outputs=additional_outputs
+        lobsterjob = PureLobsterMaker(name=f"lobster_run_{i}").make(
+            wavefunction_dir=wavefunction_dir,
+            basis_dict=basis,
+            user_lobsterin_settings=user_lobsterin_settings,
+            additional_outputs=additional_outputs,
         )
         outputs["lobster_uuids"].append(lobsterjob.output.uuid)
         outputs["lobster_dirs"].append(lobsterjob.output.dir_name)
