@@ -59,7 +59,7 @@ forcefields = [
     # quippy-ase support for py3.12 tracked in https://github.com/libAtoms/QUIP/issues/645
     "quippy-ase>=0.9.14; python_version < '3.12'",
     "sevenn>=0.9.3",
-    "torchdata<=0.7.1",                            # TODO: remove when issue fixed
+    "torchdata<=0.7.1",
 ]
 ase = ["ase>=3.23.0"]
 # tblite py3.12 support tracked in https://github.com/tblite/tblite/issues/198
@@ -128,6 +128,8 @@ strict-forcefields = [
     "torch==2.5.1",
     "torchdata==0.7.1",                            # TODO: remove when issue fixed
 ]
+
+mattersim = ["mattersim>=1.0.0"]
 
 [project.scripts]
 atm = "atomate2.cli:cli"
