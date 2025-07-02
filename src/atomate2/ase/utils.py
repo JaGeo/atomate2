@@ -402,6 +402,7 @@ class AseRelaxer:
                 write_atoms.calc = self.calculator
             else:
                 write_atoms = atoms
+            print(write_atoms)
             write(final_atoms_object_file, write_atoms, format="extxyz", append=True)
 
         return AseResult(
